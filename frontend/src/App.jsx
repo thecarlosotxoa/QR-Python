@@ -1,63 +1,89 @@
 import React, { useState } from "react";
-import axios from "axios"; // Import axios for HTTP requests
 
 function App() {
-  const [value, setValue] = useState("");
-  const [qrCode, setQrCode] = useState(null);
+  const [inputValue, setInputValue] = useState(""); // State to hold user input
+  const [imgSrc, setImgSrc] = useState(null); // State to hold the generated QR code image
+  const [error, setError] = useState(null); // State to hold any error messages
 
-  const handler = async (e) => {
+  // Handler for form submission
+  const handleSubmit = (e) => {
     e.preventDefault();
-    if (value.trim() === "") {
-      alert("Please enter a valid text!");
-      return;
-    }
-
-    try {
-      // Make a POST request to the Python backend
-      const response = await axios.post("http://127.0.0.1:5000/generate-qr", { text: value }, {
-        responseType: 'blob', // Set the response type to blob to handle images
+    setError(null);
+  
+    console.log("Sending request to backend...");
+  
+    fetch("http://127.0.0.1:5000/generate-qr", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+      },
+      body: JSON.stringify({ data: inputValue }), // Send the input value as JSON data
+    })
+      .then((response) => {
+        console.log("Received response from backend:", response);
+        if (!response.ok) {
+          throw new Error("Failed to generate QR code. Please try again.");
+        }
+        return response.json();
+      })
+      .then((data) => {
+        if (data.qr_code) {
+          setImgSrc(`data:image/png;base64,${data.qr_code}`);
+          console.log("QR code generated successfully:", data.qr_code);
+        } else {
+          throw new Error(data.error || "Failed to generate QR code.");
+        }
+      })
+      .catch((err) => {
+        console.error("Error:", err);
+        setError(err.message);
       });
-
-      // Create a URL for the image
-      const qrCodeUrl = URL.createObjectURL(response.data);
-      setQrCode(qrCodeUrl);
-    } catch (error) {
-      console.error("Error generating QR code:", error);
-      alert("Failed to generate QR code. Please try again.");
-    }
-  };
+  };  
 
   return (
     <div className="w-full min-h-screen grid place-content-center bg-[#181818]">
-      <div className="w-[23rem] p-7 space-y-8 text-slate-300">
+      <div className="w-[23rem] p-7 space-y-4 text-slate-300">
         <h1 className="text-2xl font-semibold text-center text-slate-100">
           QR Code Generator
         </h1>
 
-        {qrCode ? (
-          <img src={qrCode} alt="Generated QR Code" className="w-full h-auto" />
+        {/* Display the generated QR code image or a placeholder */}
+        {imgSrc ? (
+          <img
+            src={imgSrc}
+            alt="Generated QR Code"
+            className="w-full h-auto max-w-full cursor-pointer border border-neutral-200 rounded-3xl bg-white p-4"
+          />
         ) : (
-          <div className="w-full h-[18rem] border border-neutral-200 rounded-3xl grid place-content-center bg-[#202020]"></div>
+          <div className="w-full h-[18rem] border border-neutral-200 rounded-3xl grid place-content-center bg-[#202020]">
+            <span className="text-neutral-400">No QR code generated</span>
+          </div>
         )}
 
-        <form className="space-y-2" onSubmit={handler}>
+        {/* Display an error message if any */}
+        {error && (
+          <div className="w-full p-2 text-center text-red-500 border border-red-500 rounded">
+            {error}
+          </div>
+        )}
+
+        {/* Form for entering text to generate a QR code */}
+        <form className="space-y-1" onSubmit={handleSubmit}>
           <div>
             <input
-              aria-label="QR code input"
+              type="text"
               className="bg-[#252525] rounded w-full p-2 focus:outline outline-neutral-300"
-              placeholder="Transform your text into a QR code"
-              value={value}
-              onChange={(e) => setValue(e.target.value)}
+              placeholder="Enter text to generate QR code"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)} // Update state when the user types
             />
           </div>
           <button
-            aria-label="Create QR code"
-            className={`w-full py-3 flex justify-center bg-[#252525] hover:bg-neutral-600 duration-200 rounded ${
-              value.length === 0 ? "cursor-not-allowed opacity-50" : ""
-            }`}
-            disabled={value.length === 0}
+            type="submit"
+            className="w-full py-3 flex justify-center bg-[#252525] hover:bg-neutral-600 duration-200 rounded"
           >
-            Create
+            Generate
           </button>
         </form>
       </div>
