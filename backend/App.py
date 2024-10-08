@@ -7,7 +7,14 @@ import traceback
 import logging
 
 app = Flask(__name__)
-CORS(app, resources={r"/generate-qr": {"origins": "http://localhost:5173"}}, supports_credentials=True)
+# configuration for local testing
+# CORS(app, resources={r"/generate-qr": {"origins": "http://localhost:5173"}}, supports_credentials=True)
+
+#configuration for ec2 testing
+CORS(app, resources={r"/generate-qr": {"origins": "*"}}, supports_credentials=True)
+# origins: "*" means that requests to this route are permitted from any origin (* represents all domains). 
+# This is generally fine for testing, but in production, you might want to restrict it to your frontend's 
+# domain for security reasons.
 
 @app.route("/generate-qr", methods=["POST"])
 def generate_qr():
@@ -30,4 +37,10 @@ def generate_qr():
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.ERROR)
-    app.run(debug=True)
+    # app.run config for local testing
+    # app.run(debug=True)
+    # app.run for ec2 testing
+    app.run(host="0.0.0.0", port=5000, debug=True)
+    # By default, Flask only listens on 127.0.0.1 (localhost), which means it can only accept 
+    # requests from the same machine. Setting it to 0.0.0.0 allows external devices 
+    # (e.g., your frontend running on another IP or domain) to connect to the Flask server.

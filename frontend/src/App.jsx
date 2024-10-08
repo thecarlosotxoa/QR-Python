@@ -11,8 +11,11 @@ function App() {
     setError(null);
   
     console.log("Sending request to backend...");
-  
-    fetch("http://127.0.0.1:5000/generate-qr", {
+    
+    // config for local testing
+    // fetch("http://127.0.0.1:5000/generate-qr", {
+    // config for ec2 deployment
+    fetch("http://18.222.30.194:5000/generate-qr", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
